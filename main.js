@@ -17,7 +17,7 @@ const store = new Store({
 })
 
 // Google OAuth client ID
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID" // Replace with your actual client ID
+const GOOGLE_CLIENT_ID = "973011899866-ccpvhl2498a407ojj7jogjba9qp21td1.apps.googleusercontent.com" // Replace with your actual client ID
 
 let mainWindow
 let authWindow
