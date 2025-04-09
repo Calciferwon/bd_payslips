@@ -16,11 +16,23 @@ const store = new Store({
   encryptionKey: "your-encryption-key", // For better security in production
 })
 
+// Load environment variables for SMTP settings
+const defaultSmtpSettings = {
+  host: process.env.SMTP_HOST || "",
+  port: Number.parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true",
+  user: process.env.SMTP_USER || "",
+  password: process.env.SMTP_PASSWORD || "",
+}
+
 // Google OAuth client ID
-const GOOGLE_CLIENT_ID = "973011899866-ccpvhl2498a407ojj7jogjba9qp21td1.apps.googleusercontent.com" // Replace with your actual client ID
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID" // Replace with your actual client ID
 
 let mainWindow
 let authWindow
+
+// Declare state variable
+const state = {}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -58,6 +70,72 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit()
 })
 
+// Handle getting email template
+ipcMain.handle("get-email-template", () => {
+  return store.get("emailTemplate", "")
+})
+
+// Handle saving email template
+ipcMain.on("save-email-template", (event, template) => {
+  store.set("emailTemplate", template)
+})
+
+// Handle getting employees
+ipcMain.handle("get-employees", () => {
+  return state.employees || []
+})
+
+// Handle validating employee
+ipcMain.handle("validate-employee", async (event, employee) => {
+  try {
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(employee.email)) {
+      return {
+        valid: false,
+        message: "Invalid email format",
+      }
+    }
+
+    // Domain validation (must be @bdcf.org)
+    if (!employee.email.endsWith("@bdcf.org")) {
+      return {
+        valid: false,
+        message: "Email must be from the bdcf.org domain",
+      }
+    }
+
+    // Username validation (must match name if provided)
+    if (employee.name) {
+      const nameParts = employee.name.toLowerCase().split(" ")
+      const emailUsername = employee.email.split("@")[0].toLowerCase()
+
+      // Check if email contains first name or last name
+      const containsFirstName = nameParts[0] && emailUsername.includes(nameParts[0])
+      const containsLastName =
+        nameParts[nameParts.length - 1] && emailUsername.includes(nameParts[nameParts.length - 1])
+
+      if (!containsFirstName && !containsLastName) {
+        return {
+          valid: false,
+          message: "Email username doesn't match employee name",
+        }
+      }
+    }
+
+    // All validations passed
+    return {
+      valid: true,
+    }
+  } catch (error) {
+    log.error("Error validating employee:", error)
+    return {
+      valid: false,
+      message: error.message || "Validation failed",
+    }
+  }
+})
+
 // Handle Google login
 ipcMain.handle("google-login", async () => {
   authWindow = new BrowserWindow({
@@ -66,7 +144,11 @@ ipcMain.handle("google-login", async () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
     },
+    title: "Sign in with Google",
+    autoHideMenuBar: true,
+    backgroundColor: "#ffffff",
   })
 
   // Google OAuth2 URL
@@ -98,6 +180,15 @@ ipcMain.handle("google-login", async () => {
             // Get user info
             const userInfo = await getUserInfo(oAuth2Client)
 
+            // Check if email is from bdcf.org domain
+            if (!userInfo.email.endsWith("@bdcf.org")) {
+              authWindow.close()
+              const error = new Error("Access restricted to bdcf.org email addresses only")
+              mainWindow.webContents.send("login-error", error.message)
+              reject(error)
+              return
+            }
+
             // Save user info
             store.set("user", {
               email: userInfo.email,
@@ -112,6 +203,7 @@ ipcMain.handle("google-login", async () => {
           } catch (error) {
             log.error("Authentication error:", error)
             authWindow.close()
+            mainWindow.webContents.send("login-error", error.message || "Authentication failed")
             reject(error)
           }
         } else {
@@ -123,7 +215,9 @@ ipcMain.handle("google-login", async () => {
 
     authWindow.on("closed", () => {
       if (!store.get("user")) {
-        reject(new Error("Authentication window was closed"))
+        const error = new Error("Authentication window was closed")
+        mainWindow.webContents.send("login-error", error.message)
+        reject(error)
       }
     })
   })
@@ -338,13 +432,7 @@ ipcMain.on("save-smtp-settings", (event, settings) => {
 
 // Handle getting SMTP settings
 ipcMain.handle("get-smtp-settings", () => {
-  return store.get("smtp", {
-    host: "",
-    port: 587,
-    secure: false,
-    user: "",
-    password: "",
-  })
+  return store.get("smtp", defaultSmtpSettings)
 })
 
 // Handle sending payslips
@@ -465,6 +553,16 @@ ipcMain.handle("send-payslips", async (event, { employees, payslips }) => {
       throw new Error(`Email configuration failed: ${error.message}`)
     }
 
+    // Get email template
+    const emailTemplate = store.get("emailTemplate", "")
+    const defaultTemplate = `<p>Dear {{employee_name}},</p>
+<p>Please find attached your payslip for this month.</p>
+<p>Employee ID: {{employee_id}}</p>
+<p>If you have any questions regarding your payslip, please contact the HR department.</p>
+<p>Regards,<br>HR Department</p>`
+
+    const template = emailTemplate || defaultTemplate
+
     // Start sending emails
     mainWindow.webContents.send("process-update", {
       step: "send-payslips",
@@ -497,12 +595,22 @@ ipcMain.handle("send-payslips", async (event, { employees, payslips }) => {
           currentEmail: employee.email,
         })
 
+        // Process email template with employee data
+        let emailContent = template
+        emailContent = emailContent.replace(/{{employee_name}}/g, employee.name || "Employee")
+        emailContent = emailContent.replace(/{{employee_id}}/g, employee.employee_id)
+        emailContent = emailContent.replace(/{{employee_email}}/g, employee.email)
+
+        // Convert HTML to plain text for text version
+        const plainText = emailContent.replace(/<[^>]*>?/gm, "")
+
         // Send email with attachment
         const info = await transporter.sendMail({
           from: smtpSettings.user,
           to: employee.email,
           subject: "Your Monthly Payslip",
-          text: `Dear ${employee.name || "Employee"},\n\nPlease find attached your payslip for this month.\n\nRegards,\nHR Department`,
+          text: plainText,
+          html: emailContent,
           attachments: [
             {
               filename: path.basename(payslip.path),

@@ -11,6 +11,8 @@
       align-items: center;
       height: 100vh;
       background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
     }
     
     .login-container {
@@ -28,6 +30,18 @@
       padding: 20px;
     }
     
+    .login-header h1 {
+      margin: 0;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    
+    .login-header p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    
     .login-content {
       padding: 30px;
     }
@@ -43,6 +57,16 @@
       display: flex;
       align-items: center;
       margin: 0 auto;
+      transition: background-color 0.2s;
+    }
+    
+    .login-button:hover {
+      background-color: #3367D6;
+    }
+    
+    .login-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
     }
     
     .login-button img {
@@ -55,6 +79,50 @@
       color: #ff4d4f;
       margin-top: 20px;
       font-size: 14px;
+      background-color: #fff2f0;
+      padding: 10px;
+      border-radius: 4px;
+      border-left: 4px solid #ff4d4f;
+      text-align: left;
+      display: none;
+    }
+    
+    .domain-restriction {
+      background-color: #fffbe6;
+      border-left: 4px solid #faad14;
+      padding: 10px;
+      margin-bottom: 20px;
+      text-align: left;
+      font-size: 13px;
+    }
+    
+    .login-footer {
+      margin-top: 30px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .login-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .app-version {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 12px;
+      color: #999;
     }
   </style>
 </head>
@@ -62,36 +130,78 @@
   <div class="login-container">
     <div class="login-header">
       <h1>Payslip Sender</h1>
-      <p>Login to access the application</p>
+      <p>Secure payslip distribution system</p>
     </div>
     <div class="login-content">
+      <div class="domain-restriction">
+        <strong>Note:</strong> Access is restricted to @bdcf.org email addresses only. Please ensure you're signing in with your organization account.
+      </div>
+      
       <p style="margin-bottom: 20px;">Please sign in with your Google account to continue.</p>
       <button id="google-login" class="login-button">
         <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
         Sign in with Google
       </button>
-      <div id="login-error" class="login-error" style="display: none;"></div>
+      <div id="login-error" class="login-error"></div>
+      
+      <div class="login-footer">
+        <p>This application is for authorized HR personnel only.</p>
+        <p>For support, please contact IT department.</p>
+      </div>
     </div>
   </div>
+  
+  <div class="app-version">v1.0.0</div>
   
   <script>
     const { ipcRenderer } = require('electron');
     
     document.getElementById('google-login').addEventListener('click', async () => {
       try {
-        document.getElementById('google-login').disabled = true;
-        document.getElementById('google-login').textContent = 'Signing in...';
-        document.getElementById('login-error').style.display = 'none';
+        const button = document.getElementById('google-login');
+        const errorElement = document.getElementById('login-error');
         
+        // Reset error message
+        errorElement.style.display = 'none';
+        
+        // Disable button and show loading state
+        button.disabled = true;
+        button.innerHTML = '<div class="login-spinner"></div> Signing in...';
+        
+        // Attempt to login with Google
         const user = await ipcRenderer.invoke('google-login');
         
         // Login successful, main process will load the main page
+        console.log('Login successful:', user.email);
       } catch (error) {
-        document.getElementById('login-error').textContent = error.message || 'Authentication failed';
-        document.getElementById('login-error').style.display = 'block';
-        document.getElementById('google-login').disabled = false;
-        document.getElementById('google-login').innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google"> Sign in with Google';
+        // Handle login errors
+        const errorElement = document.getElementById('login-error');
+        const button = document.getElementById('google-login');
+        
+        // Display specific error message
+        if (error.message.includes('restricted to bdcf.org')) {
+          errorElement.textContent = 'Access denied: Only @bdcf.org email addresses are allowed.';
+        } else if (error.message.includes('Authentication window was closed')) {
+          errorElement.textContent = 'Authentication cancelled. Please try again.';
+        } else {
+          errorElement.textContent = error.message || 'Authentication failed. Please try again.';
+        }
+        
+        errorElement.style.display = 'block';
+        
+        // Reset button state
+        button.disabled = false;
+        button.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google"> Sign in with Google';
+        
+        console.error('Login error:', error);
       }
+    });
+    
+    // Check if there was a previous login attempt with an error
+    ipcRenderer.on('login-error', (event, errorMessage) => {
+      const errorElement = document.getElementById('login-error');
+      errorElement.textContent = errorMessage;
+      errorElement.style.display = 'block';
     });
   </script>
 </body>

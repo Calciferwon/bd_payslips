@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Email Validation</title>
+  <style>
+    .validation-container {
+      margin-top: 20px;
+    }
+    .validation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .validation-results {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .validation-results-header {
+      background-color: #f5f5f5;
+      padding: 10px 15px;
+      font-weight: 500;
+      border-bottom: 1px solid #ddd;
+    }
+    .validation-results-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .validation-item {
+      padding: 10px 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+    }
+    .validation-item:last-child {
+      border-bottom: none;
+    }
+    .validation-status {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    .validation-status.success {
+      color: #52c41a;
+    }
+    .validation-status.error {
+      color: #ff4d4f;
+    }
+    .validation-status.pending {
+      color: #faad14;
+    }
+    .validation-details {
+      flex-grow: 1;
+    }
+    .validation-name {
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+    .validation-email {
+      font-size: 13px;
+      color: #666;
+    }
+    .validation-message {
+      font-size: 12px;
+      margin-top: 3px;
+    }
+    .validation-message.error {
+      color: #ff4d4f;
+    }
+  </style>
+</head>
+<body>
+  <div class="validation-container">
+    <div class="validation-header">
+      <h2>Email and Username Validation</h2>
+      <button id="start-validation" class="button">Start Validation</button>
+    </div>
+    
+    <div class="validation-results">
+      <div class="validation-results-header">
+        Validation Results
+      </div>
+      <div id="validation-results-body" class="validation-results-body">
+        <div class="validation-item">
+          <div class="validation-status pending">⏳</div>
+          <div class="validation-details">
+            <div class="validation-name">No validation performed yet</div>
+            <div class="validation-email">Click "Start Validation" to begin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    document.getElementById('start-validation').addEventListener('click', async () => {
+      const resultsBody = document.getElementById('validation-results-body');
+      resultsBody.innerHTML = '<div class="validation-item"><div class="validation-status pending">⏳</div><div class="validation-details"><div class="validation-name">Loading employees...</div></div></div>';
+      
+      try {
+        // Get employees
+        const employees = await ipcRenderer.invoke('get-employees');
+        
+        if (!employees || employees.length === 0) {
+          resultsBody.innerHTML = '<div class="validation-item"><div class="validation-status error">❌</div><div class="validation-details"><div class="validation-name">No employees found</div><div class="validation-message error">Please upload an employee list first</div></div></div>';
+          return;
+        }
+        
+        // Show pending status for all employees
+        resultsBody.innerHTML = employees.map((employee, index) => `
+          <div class="validation-item" id="validation-item-${index}">
+            <div class="validation-status pending" id="validation-status-${index}">⏳</div>
+            <div class="validation-details">
+              <div class="validation-name">${employee.name || 'Employee'} (${employee.employee_id})</div>
+              <div class="validation-email">${employee.email}</div>
+              <div class="validation-message" id="validation-message-${index}">Validating...</div>
+            </div>
+          </div>
+        `).join('');
+        
+        // Validate each employee
+        for (let i = 0; i < employees.length; i++) {
+          const employee = employees[i];
+          const statusEl = document.getElementById(`validation-status-${i}`);
+          const messageEl = document.getElementById(`validation-message-${i}`);
+          
+          try {
+            const result = await ipcRenderer.invoke('validate-employee', employee);
+            
+            if (result.valid) {
+              statusEl.textContent = '✓';
+              statusEl.className = 'validation-status success';
+              messageEl.textContent = 'Valid';
+              messageEl.className = 'validation-message';
+            } else {
+              statusEl.textContent = '✕';
+              statusEl.className = 'validation-status error';
+              messageEl.textContent = result.message || 'Invalid';
+              messageEl.className = 'validation-message error';
+            }
+          } catch (error) {
+            statusEl.textContent = '✕';
+            statusEl.className = 'validation-status error';
+            messageEl.textContent = error.message || 'Validation failed';
+            messageEl.className = 'validation-message error';
+          }
+        }
+      } catch (error) {
+        resultsBody.innerHTML = `<div class="validation-item"><div class="validation-status error">❌</div><div class="validation-details"><div class="validation-name">Error</div><div class="validation-message error">${error.message || 'Failed to validate employees'}</div></div></div>`;
+      }
+    });
+  </script>
+</body>
+</html>

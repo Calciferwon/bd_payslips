@@ -114,6 +114,8 @@ function render() {
       
       <div class="tabs">
         <div class="tab ${state.activeTab === "setup" ? "active" : ""}" onclick="switchTab('setup')">Setup</div>
+        <div class="tab ${state.activeTab === "template" ? "active" : ""}" onclick="switchTab('template')">Email Template</div>
+        <div class="tab ${state.activeTab === "validation" ? "active" : ""}" onclick="switchTab('validation')">Validation</div>
         <div class="tab ${state.activeTab === "send" ? "active" : ""}" onclick="switchTab('send')" ${
           state.employees.length === 0 || state.payslips.length === 0
             ? 'style="opacity: 0.5; cursor: not-allowed;"'
@@ -167,6 +169,22 @@ function render() {
           `
               : ""
           }
+        </div>
+      </div>
+      
+      <div class="tab-content ${state.activeTab === "template" ? "active" : ""}">
+        <div class="section">
+          <h2 class="section-title">Email Template</h2>
+          <p class="section-description">Customize the email template that will be sent with payslips.</p>
+          <iframe src="email-template.html" style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
+        </div>
+      </div>
+      
+      <div class="tab-content ${state.activeTab === "validation" ? "active" : ""}">
+        <div class="section">
+          <h2 class="section-title">Email and Username Validation</h2>
+          <p class="section-description">Validate employee emails and usernames before sending.</p>
+          <iframe src="email-validation.html" style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px;"></iframe>
         </div>
       </div>
       
@@ -249,6 +267,14 @@ function render() {
         <div class="section">
           <h2 class="section-title">SMTP Settings</h2>
           <p class="section-description">Configure your email server settings for sending payslips.</p>
+          
+          ${
+            process.env.SMTP_HOST
+              ? `<div class="env-notice">
+              <p>⚠️ Environment variables detected. These will be used as default values.</p>
+            </div>`
+              : ""
+          }
           
           <div class="form-group">
             <label for="smtp-host">SMTP Host</label>
@@ -455,7 +481,7 @@ function showNotification(type, message) {
 
   // Auto-remove after 5 seconds
   setTimeout(() => {
-    closeNotification(id)
+    window.closeNotification(id)
   }, 5000)
 }
 
@@ -506,7 +532,7 @@ function addToProcessLog(status, message, details) {
 }
 
 // Load email history
-window.loadHistory = async () => {
+const loadHistory = async () => {
   const historyContainer = document.getElementById("history-container")
   historyContainer.innerHTML = "Loading..."
 

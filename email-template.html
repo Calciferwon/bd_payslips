@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Email Template Editor</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    #editor-container {
+      height: 300px;
+    }
+    .template-variables {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+    .template-variables h3 {
+      margin-top: 0;
+      font-size: 14px;
+    }
+    .template-variables ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .template-variables li {
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .template-preview {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: white;
+    }
+    .template-preview h3 {
+      margin-top: 0;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="editor-container"></div>
+  
+  <div class="template-variables">
+    <h3>Available Variables</h3>
+    <ul>
+      <li><strong>{{employee_name}}</strong> - Employee's name</li>
+      <li><strong>{{employee_id}}</strong> - Employee's ID</li>
+      <li><strong>{{employee_email}}</strong> - Employee's email address</li>
+    </ul>
+  </div>
+  
+  <div class="template-preview">
+    <h3>Preview</h3>
+    <div id="preview-container"></div>
+  </div>
+  
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Initialize Quill editor
+    const quill = new Quill('#editor-container', {
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['link'],
+          ['clean']
+        ]
+      },
+      placeholder: 'Compose your email template...',
+      theme: 'snow'
+    });
+    
+    // Default template
+    const defaultTemplate = `<p>Dear {{employee_name}},</p>
+<p>Please find attached your payslip for this month.</p>
+<p>Employee ID: {{employee_id}}</p>
+<p>If you have any questions regarding your payslip, please contact the HR department.</p>
+<p>Regards,<br>HR Department</p>`;
+    
+    // Load saved template or use default
+    async function loadTemplate() {
+      try {
+        const savedTemplate = await ipcRenderer.invoke('get-email-template');
+        if (savedTemplate) {
+          quill.clipboard.dangerouslyPasteHTML(savedTemplate);
+        } else {
+          quill.clipboard.dangerouslyPasteHTML(defaultTemplate);
+        }
+        updatePreview();
+      } catch (error) {
+        console.error('Error loading template:', error);
+        quill.clipboard.dangerouslyPasteHTML(defaultTemplate);
+        updatePreview();
+      }
+    }
+    
+    // Save template when content changes
+    quill.on('text-change', function() {
+      const content = quill.root.innerHTML;
+      ipcRenderer.send('save-email-template', content);
+      updatePreview();
+    });
+    
+    // Update preview with sample data
+    function updatePreview() {
+      const content = quill.root.innerHTML;
+      const sampleData = {
+        employee_name: 'John Doe',
+        employee_id: 'EMP001',
+        employee_email: 'john.doe@example.com'
+      };
+      
+      let previewContent = content;
+      for (const [key, value] of Object.entries(sampleData)) {
+        previewContent = previewContent.replace(new RegExp(`{{${key}}}`, 'g'), value);
+      }
+      
+      document.getElementById('preview-container').innerHTML = previewContent;
+    }
+    
+    // Initialize
+    loadTemplate();
+  </script>
+</body>
+</html>
