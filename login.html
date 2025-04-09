@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Payslip Sender - Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f5f5f5;
+    }
+    
+    .login-container {
+      width: 400px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      text-align: center;
+    }
+    
+    .login-header {
+      background-color: #4a6da7;
+      color: white;
+      padding: 20px;
+    }
+    
+    .login-content {
+      padding: 30px;
+    }
+    
+    .login-button {
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      margin: 0 auto;
+    }
+    
+    .login-button img {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+    
+    .login-error {
+      color: #ff4d4f;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Payslip Sender</h1>
+      <p>Login to access the application</p>
+    </div>
+    <div class="login-content">
+      <p style="margin-bottom: 20px;">Please sign in with your Google account to continue.</p>
+      <button id="google-login" class="login-button">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+        Sign in with Google
+      </button>
+      <div id="login-error" class="login-error" style="display: none;"></div>
+    </div>
+  </div>
+  
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    document.getElementById('google-login').addEventListener('click', async () => {
+      try {
+        document.getElementById('google-login').disabled = true;
+        document.getElementById('google-login').textContent = 'Signing in...';
+        document.getElementById('login-error').style.display = 'none';
+        
+        const user = await ipcRenderer.invoke('google-login');
+        
+        // Login successful, main process will load the main page
+      } catch (error) {
+        document.getElementById('login-error').textContent = error.message || 'Authentication failed';
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('google-login').disabled = false;
+        document.getElementById('google-login').innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google"> Sign in with Google';
+      }
+    });
+  </script>
+</body>
+</html>
