@@ -4,10 +4,256 @@
   <meta charset="UTF-8">
   <title>Payslip Sender</title>
   <link rel="stylesheet" href="styles.css">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script>
+    // Add error handling
+    window.addEventListener('error', function(event) {
+      console.error('Error caught:', event.error);
+      document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: ' + 
+        event.error.message + '</div>';
+    });
+  </script>
 </head>
 <body>
-  <div id="app">Loading...</div>
+  <div id="app">
+    <div class="container">
+      <div class="header">
+        <h1>Payslip Sender</h1>
+        <p>Secure payslip distribution system</p>
+        <div class="user-info">
+          <img src="https://via.placeholder.com/32" alt="User" class="user-avatar">
+          <span id="user-email" class="user-email">user@example.com</span>
+          <button id="logout-button" class="logout-button">Logout</button>
+        </div>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="setup-tab">Setup</div>
+        <div class="tab" data-tab="email-template-tab">Email Template</div>
+        <div class="tab" data-tab="validation-tab">Validation</div>
+        <div class="tab" data-tab="send-tab">Send Emails</div>
+        <div class="tab" data-tab="results-tab">Results</div>
+        <div class="tab" data-tab="settings-tab">Settings</div>
+        <div class="tab" data-tab="history-tab">History</div>
+      </div>
+      
+      <!-- Setup Tab -->
+      <div id="setup-tab" class="tab-content active">
+        <h2>Setup</h2>
+        <p class="section-description">Upload your employee list and payslip files to get started.</p>
+        
+        <div class="section">
+          <h3 class="section-title">Step 1: Upload Employee List</h3>
+          <p class="section-description">Upload a CSV file with employee_id, email, and name columns.</p>
+          <button id="select-employee-file" class="button">Select Employee CSV</button>
+          <div id="employee-file-info" class="file-info"></div>
+        </div>
+        
+        <div class="section">
+          <h3 class="section-title">Step 2: Upload Payslip Files</h3>
+          <p class="section-description">Upload PDF payslips. File names should include the employee_id.</p>
+          <button id="select-payslip-files" class="button">Select Payslip PDFs</button>
+          <div id="payslip-files-info" class="file-info"></div>
+          <div id="payslip-files-list" class="file-list"></div>
+        </div>
+      </div>
+      
+      <!-- Email Template Tab -->
+      <div id="email-template-tab" class="tab-content">
+        <h2>Email Template</h2>
+        <p class="section-description">Customize the email template that will be sent with payslips.</p>
+        
+        <div class="form-group">
+          <label for="email-subject">Email Subject</label>
+          <input type="text" id="email-subject" placeholder="e.g., Your Monthly Payslip" class="form-control">
+        </div>
+        
+        <div id="editor-container" style="height: 300px;"></div>
+        
+        <div class="template-variables">
+          <h3>Available Variables</h3>
+          <ul>
+            <li><strong>{{employee_name}}</strong> - Employee's name</li>
+            <li><strong>{{employee_id}}</strong> - Employee's ID</li>
+            <li><strong>{{employee_email}}</strong> - Employee's email address</li>
+          </ul>
+        </div>
+        
+        <div class="template-preview">
+          <h3>Preview</h3>
+          <div class="preview-header">
+            <span class="preview-subject-label">Subject:</span>
+            <span id="preview-subject" class="preview-subject">Your Monthly Payslip</span>
+          </div>
+          <div id="preview-container" class="preview-content"></div>
+        </div>
+      </div>
+      
+      <!-- Validation Tab -->
+      <div id="validation-tab" class="tab-content">
+        <h2>Email and Username Validation</h2>
+        <p class="section-description">Validate employee emails and usernames before sending.</p>
+        
+        <div class="validation-container">
+          <div class="validation-header">
+            <h3>Email and Username Validation</h3>
+            <button id="start-validation" class="button">Start Validation</button>
+          </div>
+          
+          <div class="validation-results">
+            <div class="validation-results-header">
+              Validation Results
+            </div>
+            <div id="validation-results-body" class="validation-results-body">
+              <div class="validation-item">
+                <div class="validation-status pending">⏳</div>
+                <div class="validation-details">
+                  <div class="validation-name">No validation performed yet</div>
+                  <div class="validation-email">Click "Start Validation" to begin</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Send Emails Tab -->
+      <div id="send-tab" class="tab-content">
+        <h2>Send Emails</h2>
+        <p class="section-description">Send payslips to employees via email.</p>
+        
+        <div class="summary-box">
+          <h3>Summary</h3>
+          <div class="summary-item">Employees: <span id="summary-employees">0</span></div>
+          <div class="summary-item">Payslips: <span id="summary-payslips">0</span></div>
+          <div class="summary-item">Matched: <span id="summary-matched">0</span></div>
+        </div>
+        
+        <div id="send-progress-container" class="progress-container" style="display: none;">
+          <div class="progress-text">
+            <span id="progress-status">Preparing to send...</span>
+            <span id="progress-count">0/0</span>
+          </div>
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+        
+        <button id="send-payslips" class="button full-width">Send Payslips</button>
+      </div>
+      
+      <!-- Results Tab -->
+      <div id="results-tab" class="tab-content">
+        <h2>Results</h2>
+        <p class="section-description">View the results of the last email sending operation.</p>
+        
+        <div id="results-container">
+          <p>No results available. Send emails first.</p>
+        </div>
+      </div>
+      
+      <!-- Settings Tab -->
+      <div id="settings-tab" class="tab-content">
+        <h2>Settings</h2>
+        <p class="section-description">Configure application settings.</p>
+        
+        <div class="section">
+          <h3 class="section-title">Email Settings</h3>
+          <p class="section-description">Configure email sender settings.</p>
+          
+          <form id="email-settings-form">
+            <div class="form-group">
+              <label for="sender-name">Sender Name</label>
+              <input type="text" id="sender-name" name="senderName" placeholder="e.g., HR Department" required>
+              <div class="input-help">This name will appear as the sender of the emails</div>
+            </div>
+            
+            <button type="submit" class="button">Save Email Settings</button>
+          </form>
+        </div>
+        
+        <div class="section">
+          <h3 class="section-title">SMTP Settings</h3>
+          <p class="section-description">Configure the email server settings for sending payslips.</p>
+          
+          <div class="smtp-guidance">
+            <h4>Common SMTP Settings</h4>
+            <ul>
+              <li><strong>Gmail:</strong> Host: smtp.gmail.com, Port: 587, Secure: No (uses STARTTLS)</li>
+              <li><strong>Outlook/Office 365:</strong> Host: smtp.office365.com, Port: 587, Secure: No (uses STARTTLS)</li>
+              <li><strong>Yahoo:</strong> Host: smtp.mail.yahoo.com, Port: 587, Secure: No (uses STARTTLS)</li>
+            </ul>
+            <p><strong>Note:</strong> For Gmail and other providers, you may need to use an "App Password" instead of your regular password.</p>
+          </div>
+          
+          <div class="smtp-gmail-guidance">
+            <h4>Gmail App Password Instructions</h4>
+            <p>If you're using Gmail, you'll need to use an App Password instead of your regular Gmail password:</p>
+            <ol>
+              <li>Go to your <a href="#" id="gmail-account-link">Google Account Settings</a></li>
+              <li>Enable 2-Step Verification if not already enabled</li>
+              <li>Go to App Passwords and generate a new password for "Mail" and "Other (Custom name)"</li>
+              <li>Use that generated password in the password field above</li>
+            </ol>
+            <p>This is required because Google blocks sign-in attempts from apps that don't use modern security standards.</p>
+          </div>
+          
+          <form id="smtp-form">
+            <div class="form-group">
+              <label for="smtp-host">SMTP Host</label>
+              <input type="text" id="smtp-host" name="host" placeholder="e.g., smtp.gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtp-port">SMTP Port</label>
+              <input type="number" id="smtp-port" name="port" placeholder="e.g., 587" required>
+              <div class="input-help">Common ports: 587 (STARTTLS) or 465 (SSL)</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtp-secure">
+                <input type="checkbox" id="smtp-secure" name="secure">
+                Use Secure Connection (SSL/TLS)
+              </label>
+              <div class="input-help">Enable for port 465, disable for port 587</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtp-user">Username / Email</label>
+              <input type="text" id="smtp-user" name="user" placeholder="e.g., your-email@bdcf.org" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtp-sender-name">Sender Name</label>
+              <input type="text" id="smtp-sender-name" name="senderName" placeholder="e.g., HR Department" required>
+              <div class="input-help">This name will appear as the sender of the email</div>
+            </div>
+            
+            <div class="form-group">
+              <label for="smtp-password">Password</label>
+              <input type="password" id="smtp-password" name="password" placeholder="Your email password" required>
+            </div>
+            
+            <button type="submit" class="button">Save SMTP Settings</button>
+            <button type="button" id="test-smtp" class="button secondary">Test Connection</button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- History Tab -->
+      <div id="history-tab" class="tab-content">
+        <h2>Email History</h2>
+        <p class="section-description">View the history of sent emails.</p>
+        
+        <div id="history-container">
+          <p>No history available.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <div id="notification-container"></div>
+  
   <div id="process-log-container">
     <div class="process-log-header">
       <h3>Process Log</h3>
@@ -15,6 +261,17 @@
     </div>
     <div id="process-log"></div>
   </div>
-  <script src="renderer.js"></script>
+  
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script>
+    // Try-catch around the renderer script
+    try {
+      require('./renderer.js');
+    } catch (error) {
+      console.error('Failed to load renderer:', error);
+      document.body.innerHTML += '<div style="color: red; padding: 20px;">Failed to load application: ' + 
+        error.message + '</div>';
+    }
+  </script>
 </body>
 </html>

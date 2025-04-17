@@ -1,208 +1,388 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Payslip Sender - Login</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
+<meta charset="UTF-8">
+<title>Payslip Sender - Login</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .login-container {
+    width: 400px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    text-align: center;
+  }
+  
+  .login-header {
+    background-color: #2d3748;
+    color: white;
+    padding: 20px;
+  }
+  
+  .login-header h1 {
+    margin: 0;
+    font-size: 24px;
+    margin-bottom: 5px;
+  }
+  
+  .login-header p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  
+  .login-content {
+    padding: 30px;
+  }
+  
+  .login-button {
+    background-color: #2d3748;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+    transition: background-color 0.2s;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+  
+  .login-button:hover {
+    background-color: #1a202c;
+  }
+  
+  .login-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .login-button img {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+  }
+  
+  .login-error {
+    color: #e53e3e;
+    margin-top: 20px;
+    font-size: 14px;
+    background-color: #fff2f0;
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 4px solid #e53e3e;
+    text-align: left;
+    display: none;
+  }
+  
+  .domain-restriction {
+    background-color: #fffbe6;
+    border-left: 4px solid #d69e2e;
+    padding: 10px;
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 13px;
+  }
+  
+  .login-footer {
+    margin-top: 30px;
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .login-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .app-version {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: #999;
+  }
+
+  .debug-section {
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    text-align: left;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .debug-button {
+    background-color: #2d3748;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+    width: 100%;
+  }
+  
+  .debug-button:hover {
+    background-color: #1a202c;
+  }
+  
+  .login-options {
+    margin-top: 20px;
+  }
+  
+  .login-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #666;
+    font-size: 14px;
+  }
+  
+  .login-divider::before,
+  .login-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .login-divider::before {
+    margin-right: 10px;
+  }
+  
+  .login-divider::after {
+    margin-left: 10px;
+  }
+  
+  .env-warning {
+    background-color: #fff2f0;
+    border-left: 4px solid #e53e3e;
+    padding: 10px;
+    margin-bottom: 20px;
+    text-align: left;
+    font-size: 13px;
+    display: none;
+  }
+
+  .highlighted-button {
+    background-color: #38a169;
+    animation: pulse 2s infinite;
+  }
+
+  .highlighted-button:hover {
+    background-color: #2f855a;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(56, 161, 105, 0.7);
     }
-    
-    .login-container {
-      width: 400px;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      text-align: center;
+    70% {
+      box-shadow: 0 0 0 10px rgba(56, 161, 105, 0);
     }
-    
-    .login-header {
-      background-color: #4a6da7;
-      color: white;
-      padding: 20px;
+    100% {
+      box-shadow: 0 0 0 0 rgba(56, 161, 105, 0);
     }
-    
-    .login-header h1 {
-      margin: 0;
-      font-size: 24px;
-      margin-bottom: 5px;
-    }
-    
-    .login-header p {
-      margin: 0;
-      font-size: 14px;
-      opacity: 0.8;
-    }
-    
-    .login-content {
-      padding: 30px;
-    }
-    
-    .login-button {
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      margin: 0 auto;
-      transition: background-color 0.2s;
-    }
-    
-    .login-button:hover {
-      background-color: #3367D6;
-    }
-    
-    .login-button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-    
-    .login-button img {
-      width: 20px;
-      height: 20px;
-      margin-right: 10px;
-    }
-    
-    .login-error {
-      color: #ff4d4f;
-      margin-top: 20px;
-      font-size: 14px;
-      background-color: #fff2f0;
-      padding: 10px;
-      border-radius: 4px;
-      border-left: 4px solid #ff4d4f;
-      text-align: left;
-      display: none;
-    }
-    
-    .domain-restriction {
-      background-color: #fffbe6;
-      border-left: 4px solid #faad14;
-      padding: 10px;
-      margin-bottom: 20px;
-      text-align: left;
-      font-size: 13px;
-    }
-    
-    .login-footer {
-      margin-top: 30px;
-      font-size: 12px;
-      color: #666;
-    }
-    
-    .login-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      margin-right: 10px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .app-version {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      font-size: 12px;
-      color: #999;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="login-header">
-      <h1>Payslip Sender</h1>
-      <p>Secure payslip distribution system</p>
+<div class="login-container">
+  <div class="login-header">
+    <h1>Payslip Sender</h1>
+    <p>Secure payslip distribution system</p>
+  </div>
+  <div class="login-content">
+    <div class="domain-restriction">
+      <strong>Note:</strong> Access is restricted to @bdcf.org email addresses only. Please ensure you're signing in with your organization account.
     </div>
-    <div class="login-content">
-      <div class="domain-restriction">
-        <strong>Note:</strong> Access is restricted to @bdcf.org email addresses only. Please ensure you're signing in with your organization account.
-      </div>
+    
+    <div id="env-warning" class="env-warning">
+      <strong>Configuration Error:</strong> Google Client ID or Secret is missing. Please set up your Google credentials or use the Test Account option below.
+    </div>
+    
+    <div class="login-options">
+      <h3>Login Options</h3>
+      <p>Please use one of the following login methods:</p>
       
-      <p style="margin-bottom: 20px;">Please sign in with your Google account to continue.</p>
       <button id="google-login" class="login-button">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=" alt="Google" style="width: 18px; height: 18px; margin-right: 10px; vertical-align: middle;">
         Sign in with Google
       </button>
-      <div id="login-error" class="login-error"></div>
       
-      <div class="login-footer">
-        <p>This application is for authorized HR personnel only.</p>
-        <p>For support, please contact IT department.</p>
-      </div>
+      <div class="login-divider">OR</div>
+      
+      <button id="debug-login" class="debug-button">
+        Use Test Account
+      </button>
+    </div>
+    
+    <div id="login-error" class="login-error"></div>
+    <div id="debug-info" style="margin-top: 10px; font-family: monospace;"></div>
+    
+    <div class="login-footer">
+      <p>This application is for authorized HR personnel only.</p>
+      <p>For support, please contact IT department.</p>
     </div>
   </div>
-  
-  <div class="app-version">v1.0.0</div>
-  
-  <script>
-    const { ipcRenderer } = require('electron');
-    
-    document.getElementById('google-login').addEventListener('click', async () => {
-      try {
-        const button = document.getElementById('google-login');
-        const errorElement = document.getElementById('login-error');
-        
-        // Reset error message
-        errorElement.style.display = 'none';
-        
-        // Disable button and show loading state
-        button.disabled = true;
-        button.innerHTML = '<div class="login-spinner"></div> Signing in...';
-        
-        // Attempt to login with Google
-        const user = await ipcRenderer.invoke('google-login');
-        
-        // Login successful, main process will load the main page
-        console.log('Login successful:', user.email);
-      } catch (error) {
-        // Handle login errors
-        const errorElement = document.getElementById('login-error');
-        const button = document.getElementById('google-login');
-        
-        // Display specific error message
-        if (error.message.includes('restricted to bdcf.org')) {
-          errorElement.textContent = 'Access denied: Only @bdcf.org email addresses are allowed.';
-        } else if (error.message.includes('Authentication window was closed')) {
-          errorElement.textContent = 'Authentication cancelled. Please try again.';
-        } else {
-          errorElement.textContent = error.message || 'Authentication failed. Please try again.';
+</div>
+
+<div class="app-version">v1.0.0</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const { ipcRenderer } = require('electron');
+      
+      // Check if environment variables are set
+      const checkEnvVars = async () => {
+        try {
+          const envStatus = await ipcRenderer.invoke('check-env-vars');
+          if (!envStatus.googleClientId || !envStatus.googleClientSecret) {
+            document.getElementById('env-warning').style.display = 'block';
+            
+            // Highlight the debug login button
+            const debugButton = document.getElementById('debug-login');
+            debugButton.classList.add('highlighted-button');
+            debugButton.textContent = 'Use Test Account (Recommended)';
+          }
+        } catch (error) {
+          console.error('Error checking environment variables:', error);
+          // If there's an error checking env vars, show warning
+          document.getElementById('env-warning').style.display = 'block';
+          
+          // Highlight the debug login button
+          const debugButton = document.getElementById('debug-login');
+          debugButton.classList.add('highlighted-button');
+          debugButton.textContent = 'Use Test Account (Recommended)';
         }
-        
+      };
+      
+      // Run environment check
+      checkEnvVars();
+      
+      // Google login
+      document.getElementById('google-login').addEventListener('click', async () => {
+        try {
+          const button = document.getElementById('google-login');
+          const errorElement = document.getElementById('login-error');
+          
+          // Reset error message
+          errorElement.style.display = 'none';
+          
+          // Disable button and show loading state
+          button.disabled = true;
+          button.innerHTML = '<div class="login-spinner"></div> Signing in...';
+          
+          console.log('Attempting Google login...');
+          
+          // Attempt to login with Google
+          const user = await ipcRenderer.invoke('google-login');
+          
+          // Login successful, main process will load the main page
+          console.log('Login successful:', user.email);
+        } catch (error) {
+          // Handle login errors
+          const errorElement = document.getElementById('login-error');
+          const button = document.getElementById('google-login');
+          
+          console.error('Login error:', error);
+          
+          // Display specific error message
+          if (error.message && error.message.includes('restricted to bdcf.org')) {
+            errorElement.textContent = 'Access denied: Only @bdcf.org email addresses are allowed.';
+          } else if (error.message && error.message.includes('Authentication window was closed')) {
+            errorElement.textContent = 'Authentication cancelled. Please try again.';
+          } else if (error.message && error.message.includes('Client ID not configured')) {
+            errorElement.textContent = 'Google Client ID not configured. Please use the Test Account option instead.';
+            // Highlight the debug login button
+            const debugButton = document.getElementById('debug-login');
+            debugButton.classList.add('highlighted-button');
+            debugButton.textContent = 'Use Test Account (Recommended)';
+          } else if (error.message && error.message.includes('client_secret is missing')) {
+            errorElement.textContent = 'Google Client Secret is missing. Please use the Test Account option instead.';
+            // Highlight the debug login button
+            const debugButton = document.getElementById('debug-login');
+            debugButton.classList.add('highlighted-button');
+            debugButton.textContent = 'Use Test Account (Recommended)';
+          } else {
+            errorElement.textContent = error.message || 'Authentication failed. Please try again.';
+          }
+          
+          errorElement.style.display = 'block';
+          
+          // Reset button state
+          button.disabled = false;
+          button.innerHTML = '<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiIGZpbGwtcnVsZT0ibm9uemVybyIvPjxwYXRoIGQ9Ik05IDE4YzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNNCAxMC43YTUuNCA1LjQgMCAwIDEgMC0zLjRWNUgxYTkgOSAwIDAgMCAwIDhsMy0yLjN6IiBmaWxsPSIjRkJCQzA1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48cGF0aCBkPSJNOSAzLjZjMS4zIDAgMi41LjQgMy40IDEuM0wxNSAyLjNBOSA5IDAgMCAwIDEgNWwzIDIuNGE1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PHBhdGggZD0iTTAgMGgxOHYxOEgweiIvPjwvZz48L3N2Zz4=" alt="Google"> Sign in with Google';
+        }
+      });
+
+      // Debug login option
+      document.getElementById('debug-login').addEventListener('click', async () => {
+        try {
+          const debugButton = document.getElementById('debug-login');
+          const debugInfo = document.getElementById('debug-info');
+          
+          // Show loading state
+          debugButton.disabled = true;
+          debugButton.innerHTML = '<div class="login-spinner"></div> Signing in...';
+          debugInfo.textContent = 'Using test account...';
+          
+          const user = await ipcRenderer.invoke('debug-login');
+          
+          // This might not be visible as the page will redirect
+          debugInfo.textContent = `Logged in as: ${user.email}`;
+        } catch (error) {
+          const debugInfo = document.getElementById('debug-info');
+          debugInfo.textContent = `Error: ${error.message}`;
+          
+          // Reset button state
+          const debugButton = document.getElementById('debug-login');
+          debugButton.disabled = false;
+          debugButton.textContent = 'Use Test Account';
+          if (debugButton.classList.contains('highlighted-button')) {
+            debugButton.textContent = 'Use Test Account (Recommended)';
+          }
+        }
+      });
+      
+      // Check if there was a previous login attempt with an error
+      ipcRenderer.on('login-error', (event, errorMessage) => {
+        const errorElement = document.getElementById('login-error');
+        errorElement.textContent = errorMessage;
         errorElement.style.display = 'block';
-        
-        // Reset button state
-        button.disabled = false;
-        button.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google"> Sign in with Google';
-        
-        console.error('Login error:', error);
-      }
-    });
-    
-    // Check if there was a previous login attempt with an error
-    ipcRenderer.on('login-error', (event, errorMessage) => {
-      const errorElement = document.getElementById('login-error');
-      errorElement.textContent = errorMessage;
-      errorElement.style.display = 'block';
-    });
-  </script>
+      });
+    } catch (error) {
+      console.error('Script initialization error:', error);
+      document.body.innerHTML += `<div style="color: red; padding: 20px;">Initialization error: ${error.message}</div>`;
+    }
+  });
+</script>
 </body>
 </html>
